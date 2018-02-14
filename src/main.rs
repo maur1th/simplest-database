@@ -5,11 +5,12 @@ mod server;
 mod client;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let mut args = env::args().skip(1);
+    let mode = args.next().expect("Missing argument");
     let socket = Path::new("/tmp/simplest-db.sock");
-    match args.get(1).expect("Missing argument").as_ref() {
+    match mode.as_ref() {
         "server" => server::run(socket),
         "client" => client::run(socket),
-        _ => panic!("Unknown argument: {}", args[1]),
+        _ => panic!("Unknown argument: {}", mode),
     };
 }
