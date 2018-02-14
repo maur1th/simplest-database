@@ -8,9 +8,8 @@ fn handle_client(stream: UnixStream) {
     println!("Got a connection: {:?}", stream);
 }
 
-pub fn run() {
+pub fn run(socket: &Path) {
     println!("Starting server");
-    let socket = Path::new("/tmp/simplest-db.sock");
     if socket.exists() {
         println!("Removing previous socket file");
         fs::remove_file(socket).unwrap();
