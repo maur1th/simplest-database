@@ -3,8 +3,4 @@ name = "simplest-database"
 version = "0.1.0"
 authors = ["Thomas Maurin <thomas@maurin.io>"]
 
-[lib]
-name = "server"
-path = "src/server.rs"
-
 [dependencies]
