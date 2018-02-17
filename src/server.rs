@@ -1,25 +1,29 @@
-use std::path::Path;
-use std::fs;
+use std::io::prelude::*;
+use std::str;
 use std::thread;
-use std::os::unix::net::{UnixStream, UnixListener};
+use std::net::{TcpListener,TcpStream};
 use std::process::exit;
 
-fn handle_client(stream: UnixStream) {
+fn handle_client(mut stream: TcpStream) {
     println!("Got a connection: {:?}", stream);
+    let mut buffer = [0; 512];
+    stream.read(&mut buffer).unwrap();
+    println!("{}", str::from_utf8(&buffer).unwrap());
+    stream.write_all(b"done").unwrap();
+    stream.flush().unwrap();
 }
 
-pub fn run(socket: &Path) {
-    println!("Starting server");
-    if socket.exists() {
-        println!("Removing previous socket file");
-        fs::remove_file(socket).unwrap();
-    }
-    let listener = match UnixListener::bind(socket) {
+pub fn run(port: i32) {
+    println!("Starting server on port {}...", port);
+    let listener = match TcpListener::bind(format!("localhost:{}", port)) {
         Err(e) => {
             eprintln!("Could not bind listener due to {}", e);
             exit(1);
         }
-        Ok(listener) => listener,
+        Ok(listener) => {
+            println!("Server started");
+            listener
+        }
     };
     for stream in listener.incoming() {
         match stream {
