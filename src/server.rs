@@ -9,13 +9,15 @@ struct Item {
     value: String,
 }
 
-fn set(params: Vec<&str>) {
+fn set(params: Vec<&str>) -> &str {
     let item = Item {key: params[0].to_string(), value: params[1].to_string()};
     println!("set: {} {}", item.key, item.value);
+    "done"
 }
 
-fn get(key: &str) {
+fn get(key: &str) -> &str {
     println!("get {}", key);
+    "done"
 }
 
 fn handle_client(mut stream: TcpStream) {
@@ -25,12 +27,12 @@ fn handle_client(mut stream: TcpStream) {
     let mut msg = str::from_utf8(&buffer).unwrap().split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
-    match action.as_ref() {
+    let res: &str = match action.as_ref() {
         "set" => set(params),
         "get" => get(params[0]),
         _ => panic!("Unknown argument: {}", action),
     };
-    stream.write_all(b"done").unwrap();
+    stream.write_all(res.as_bytes()).unwrap();
     stream.flush().unwrap();
 }
 
