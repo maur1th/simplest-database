@@ -10,7 +10,13 @@ struct Item {
 }
 
 fn set(params: Vec<&str>) -> &str {
-    let item = Item {key: params[0].to_string(), value: params[1].to_string()};
+    let params_string: Vec<String> = params.into_iter()
+        .map(|s| s.to_string())
+        .collect();
+    let item = match params_string.as_slice() {
+        [key, value] => Item {key: key.to_string(), value: value.to_string()},
+        _ => return "wrong number of arguments",
+    };
     println!("set: {} {}", item.key, item.value);
     "done"
 }
