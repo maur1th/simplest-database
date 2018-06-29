@@ -7,10 +7,10 @@ struct Item {
 
 fn parse(params: Vec<&str>) -> Result<Item, &str> {
     let params_string: Vec<String> = params.into_iter()
-        .map(|s| s.to_string())
+        .map(|s| s.to_owned())
         .collect();
     match params_string.as_slice() {
-        [key, value] => Ok(Item {key: key.to_string(), value: value.to_string()}),
+        [key, value] => Ok(Item {key: key.to_owned(), value: value.to_owned()}),
         _ => Err("wrong number of arguments")
     }
 }
