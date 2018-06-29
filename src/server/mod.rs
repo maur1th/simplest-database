@@ -4,27 +4,8 @@ use std::thread;
 use std::net::{TcpListener,TcpStream};
 use std::process::exit;
 
-struct Item {
-    key: String,
-    value: String,
-}
-
-fn set(params: Vec<&str>) -> &str {
-    let params_string: Vec<String> = params.into_iter()
-        .map(|s| s.to_string())
-        .collect();
-    let item = match params_string.as_slice() {
-        [key, value] => Item {key: key.to_string(), value: value.to_string()},
-        _ => return "wrong number of arguments",
-    };
-    println!("set: {} {}", item.key, item.value);
-    "done"
-}
-
-fn get(key: &str) -> &str {
-    println!("get {}", key);
-    "done"
-}
+mod set;
+mod get;
 
 fn handle_client(mut stream: TcpStream) {
     println!("Got a connection: {:?}", stream);
@@ -33,10 +14,10 @@ fn handle_client(mut stream: TcpStream) {
     let mut msg = str::from_utf8(&buffer).unwrap().split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
-    let res: &str = match action.as_ref() {
-        "set" => set(params),
-        "get" => get(params[0]),
-        _ => panic!("Unknown argument: {}", action),
+    let res: String = match action.as_ref() {
+        "set" => set::new(params).to_owned(),
+        "get" => get::new(params[0]).to_owned(),
+        _ => format!("Unknown argument: {}", action),
     };
     stream.write_all(res.as_bytes()).unwrap();
     stream.flush().unwrap();
