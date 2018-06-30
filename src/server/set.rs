@@ -1,4 +1,6 @@
-// use std::fs::OpenOptions;
+use std::io;
+use std::io::prelude::*;
+use std::fs::OpenOptions;
 
 struct Item {
     key: String,
@@ -15,11 +17,21 @@ fn parse(params: Vec<&str>) -> Result<Item, &str> {
     }
 }
 
-pub fn new(params: Vec<&str>) -> &str {
+
+fn write(item: &Item) -> io::Result<()> {
+    let mut file = OpenOptions::new().append(true).create(true).open("db.txt")?;
+    file.write_all(format!("{},{}\n", item.key, item.value).as_bytes())?;
+    Ok(())
+}
+
+pub fn new(params: Vec<&str>) -> String {
     let item = match parse(params) {
         Ok(item) => item,
-        Err(err) => return err
+        Err(err) => return err.to_owned()
     };
-    println!("set: {} {}", item.key, item.value);
-    "done"
+    println!("set: {} {}", &item.key, &item.value);
+    match write(&item) {
+        Ok(()) => format!("{} {}", &item.key, &item.value),
+        Err(e) => e.to_string()
+    }
 }
