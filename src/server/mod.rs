@@ -7,11 +7,15 @@ use std::process::exit;
 mod set;
 mod get;
 
+
 fn handle_client(mut stream: TcpStream) {
     println!("Got a connection: {:?}", stream);
     let mut buffer = [0; 512];
     stream.read(&mut buffer).unwrap();
-    let mut msg = str::from_utf8(&buffer).unwrap().split(",");
+    let mut msg = str::from_utf8(&buffer)
+        .unwrap()
+        .trim_matches(char::from(0))
+        .split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
     let res: String = match action.as_ref() {
