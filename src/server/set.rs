@@ -29,7 +29,7 @@ pub fn new(params: Vec<&str>) -> String {
         Ok(item) => item,
         Err(err) => return err.to_owned()
     };
-    println!("set: {} {}", &item.key, &item.value);
+    println!("Set: {}: {}", &item.key, &item.value);
     match write(&item) {
         Ok(()) => format!("{} {}", &item.key, &item.value),
         Err(e) => e.to_string()

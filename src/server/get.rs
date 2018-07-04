@@ -1,32 +1,26 @@
-use std::io::{self, BufReader, Error, ErrorKind};
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::fs::File;
 
-fn match_line<'a>(key: &str, line: &'a str) -> Option<&'a str> {
-    if line.starts_with(&format!("{},", key)) {
-        println!("Match");
-        return Some(line)
-    }
-    None
-}
 
-fn get_line(key: &str) -> io::Result<String> {
-    let file = File::open("db.txt")?;
+fn find(key: &str) -> Option<String> {
+    let file = File::open("db.txt")
+        .expect("Could not create / open db file.");
     let file = BufReader::new(file);
-    for line in file.lines() {
-        if let Some(result) = match_line(key, &line.unwrap()) {
-            return Ok(result.to_owned())
+    let mut matches = file.lines().filter_map(|line| {
+        let line = line.expect("Error reading db");
+        match line.starts_with(&format!("{},", key)) {
+            true => Some(line),
+            false => None
         }
-    }
-    Err(Error::new(ErrorKind::NotFound, "No match found."))
+    });
+    matches.next()
 }
 
 pub fn new(key: &str) -> String {
-    println!("get {}", key);
-    let result = match get_line(key) {
-        Ok(result) => result,
-        Err(error) => return error.to_string()
-    };
-    let index = result.find(",").expect("DB Error") + 1;
-    result[index..].to_owned()
+    println!("Get: {}", key);
+    find(key).map_or(String::from("No match found."), |r| {
+        let index = r.find(",").expect("DB Error");
+        r[index+1..].to_owned()
+    })
 }
