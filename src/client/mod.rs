@@ -1,10 +1,16 @@
 use std::io::prelude::*;
+use std::io;
 use std::net::TcpStream;
 
-pub fn run(msg: Vec<String>, port: i32) {
-    let mut stream = TcpStream::connect(format!("localhost:{}", port)).unwrap();
-    stream.write_all(msg.join(",").as_bytes()).unwrap();
+fn query(msg: Vec<String>, port: i32) -> io::Result<String> {
+    let mut stream = TcpStream::connect(format!("localhost:{}", port))?;
+    stream.write_all(msg.join(",").as_bytes())?;
     let mut response = String::new();
-    stream.read_to_string(&mut response).unwrap();
-    println!("{}", response);
+    stream.read_to_string(&mut response)?;
+    Ok(response)
+}
+
+pub fn run(msg: Vec<String>, port: i32) {
+    let res = query(msg, port).expect("Connection error.");
+    println!("{}", res);
 }
