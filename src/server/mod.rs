@@ -1,3 +1,5 @@
+use std::io;
+use std::io::{Error, ErrorKind};
 use std::io::prelude::*;
 use std::str;
 use std::thread;
@@ -8,6 +10,14 @@ mod set;
 mod get;
 
 
+fn handle_routes(action: &str, params: Vec<&str>) -> io::Result<String> {
+    match action {
+        "set" => set::new(params),
+        "get" => get::new(params[0]),
+        _ => Err(Error::new(ErrorKind::InvalidInput, format!("Unknown argument: {}", action))),
+    }
+}
+
 fn handle_client(mut stream: TcpStream) {
     let mut buffer = [0; 512];
     stream.read(&mut buffer).unwrap();
@@ -17,10 +27,12 @@ fn handle_client(mut stream: TcpStream) {
         .split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
-    let res: String = match action.as_ref() {
-        "set" => set::new(params).to_owned(),
-        "get" => get::new(params[0]).to_owned(),
-        _ => format!("Unknown argument: {}", action),
+    let res: String = match handle_routes(action, params) {
+        Ok(res) => res,
+        Err(err) => {
+            println!("Got an error: {}", err);
+            format!("{:?}", err)
+        }
     };
     stream.write_all(res.as_bytes()).unwrap();
     stream.flush().unwrap();

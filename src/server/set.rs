@@ -1,5 +1,6 @@
 use std::io;
 use std::io::prelude::*;
+use std::io::{Error, ErrorKind};
 use std::fs::OpenOptions;
 
 struct Item {
@@ -7,16 +8,15 @@ struct Item {
     value: String,
 }
 
-fn parse(params: Vec<&str>) -> Result<Item, &str> {
+fn parse(params: Vec<&str>) -> io::Result<Item> {
     let params_string: Vec<String> = params.into_iter()
         .map(|s| s.to_owned())
         .collect();
     match params_string.as_slice() {
         [key, value] => Ok(Item {key: key.to_owned(), value: value.to_owned()}),
-        _ => Err("wrong number of arguments")
+        _ => Err(Error::new(ErrorKind::InvalidInput, "wrong number of arguments")),
     }
 }
-
 
 fn write(item: &Item) -> io::Result<()> {
     let mut file = OpenOptions::new().append(true).create(true).open("db.txt")?;
@@ -24,14 +24,9 @@ fn write(item: &Item) -> io::Result<()> {
     Ok(())
 }
 
-pub fn new(params: Vec<&str>) -> String {
-    let item = match parse(params) {
-        Ok(item) => item,
-        Err(err) => return err.to_owned()
-    };
+pub fn new(params: Vec<&str>) -> io::Result<String> {
+    let item = parse(params)?;
     println!("Set: {}: {}", &item.key, &item.value);
-    match write(&item) {
-        Ok(()) => format!("{} {}", &item.key, &item.value),
-        Err(e) => e.to_string()
-    }
+    write(&item)?;
+    Ok(format!("{} {}", &item.key, &item.value))
 }
