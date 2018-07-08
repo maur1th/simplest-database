@@ -10,9 +10,9 @@ mod set;
 mod get;
 
 
-fn handle_routes(action: &str, params: Vec<&str>) -> io::Result<String> {
+fn handle_routes(action: &str, params: &[&str]) -> io::Result<String> {
     match action {
-        "set" => set::new(params),
+        "set" => set::new(&params),
         "get" => get::new(params[0]),
         _ => Err(Error::new(ErrorKind::InvalidInput, format!("Unknown argument: {}", action))),
     }
@@ -27,7 +27,7 @@ fn handle_client(mut stream: TcpStream) {
         .split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
-    let res: String = match handle_routes(action, params) {
+    let res: String = match handle_routes(action, &params) {
         Ok(res) => res,
         Err(err) => {
             println!("Got an error: {}", err);

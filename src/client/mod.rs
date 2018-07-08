@@ -2,7 +2,7 @@ use std::io::prelude::*;
 use std::io;
 use std::net::TcpStream;
 
-fn query(msg: Vec<String>, port: i32) -> io::Result<String> {
+fn query(msg: &[String], port: i32) -> io::Result<String> {
     let mut stream = TcpStream::connect(format!("localhost:{}", port))?;
     stream.write_all(msg.join(",").as_bytes())?;
     let mut response = String::new();
@@ -10,7 +10,7 @@ fn query(msg: Vec<String>, port: i32) -> io::Result<String> {
     Ok(response)
 }
 
-pub fn run(msg: Vec<String>, port: i32) {
+pub fn run(msg: &[String], port: i32) {
     let res = query(msg, port).expect("Connection error.");
     println!("{}", res);
 }

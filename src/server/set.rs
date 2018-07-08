@@ -8,12 +8,9 @@ struct Item {
     value: String,
 }
 
-fn parse(params: Vec<&str>) -> io::Result<Item> {
-    let params_string: Vec<String> = params.into_iter()
-        .map(|s| s.to_owned())
-        .collect();
-    match params_string.as_slice() {
-        [key, value] => Ok(Item {key: key.to_owned(), value: value.to_owned()}),
+fn parse(params: &[&str]) -> io::Result<Item> {
+    match params {
+        [key, value] => Ok(Item {key: key.to_string(), value: value.to_string()}),
         _ => Err(Error::new(ErrorKind::InvalidInput, "wrong number of arguments")),
     }
 }
@@ -24,7 +21,7 @@ fn write(item: &Item) -> io::Result<()> {
     Ok(())
 }
 
-pub fn new(params: Vec<&str>) -> io::Result<String> {
+pub fn new(params: &[&str]) -> io::Result<String> {
     let item = parse(params)?;
     println!("Set: {}: {}", &item.key, &item.value);
     write(&item)?;
