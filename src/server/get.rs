@@ -8,13 +8,16 @@ use std::fs::File;
 fn find(key: &str) -> io::Result<String> {
     let file = File::open("db.txt")?;
     let file = BufReader::new(file);
+    let mut results: Vec<String> = Vec::new();
     for line in file.lines() {
         let line = line?;
         if line.starts_with(&format!("{},", key)) {
-            return Ok(line)
+            results.push(line);
         }
     }
-    Err(Error::new(ErrorKind::NotFound, "No match found."))
+    results.last()
+        .map(|s| s.to_owned())
+        .ok_or(Error::new(ErrorKind::NotFound, "No match found."))
 }
 
 pub fn new(key: &str) -> io::Result<String> {
