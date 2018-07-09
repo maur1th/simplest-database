@@ -1,29 +1,25 @@
-use std::io;
 use std::io::prelude::*;
-use std::io::{Error, ErrorKind};
-use std::fs::OpenOptions;
+use std::io::{SeekFrom, Result};
+use std::fs::{OpenOptions};
 
-struct Item {
-    key: String,
-    value: String,
-}
 
-fn parse(params: &[&str]) -> io::Result<Item> {
-    match params {
-        [key, value] => Ok(Item {key: key.to_string(), value: value.to_string()}),
-        _ => Err(Error::new(ErrorKind::InvalidInput, "wrong number of arguments")),
-    }
-}
-
-fn write(item: &Item) -> io::Result<()> {
-    let mut file = OpenOptions::new().append(true).create(true).open("db.txt")?;
-    file.write_all(format!("{},{}\n", item.key, item.value).as_bytes())?;
-    Ok(())
-}
-
-pub fn new(params: &[&str]) -> io::Result<String> {
-    let item = parse(params)?;
+fn write(item: &super::Item, log_file: &str) -> u64 {
+    let mut log = OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(log_file)
+        .expect("Could not open log file.");
+    let bytes = item.to_buf();
     println!("Set: {}: {}", &item.key, &item.value);
-    write(&item)?;
+    log.write_all(bytes.as_slice()).expect("Could not write to log.");
+    let current_offset = log.seek(SeekFrom::Current(0))
+        .expect("Error reading log.");
+    current_offset - bytes.len() as u64
+}
+
+pub fn new(index: super::Index, params: &[&str]) -> Result<String> {
+    let item = super::Item::new(params)?;
+    let offset = write(&item, "db.txt");
+    index.update(&item.key, offset);
     Ok(format!("{} {}", &item.key, &item.value))
 }
