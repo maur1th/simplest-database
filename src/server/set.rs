@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::io::{SeekFrom, Result};
 use std::fs::{OpenOptions};
+use std::sync::mpsc::Receiver;
 
 
 fn write(item: &super::Item, log_file: &str) -> u64 {
@@ -17,9 +18,18 @@ fn write(item: &super::Item, log_file: &str) -> u64 {
     current_offset - bytes.len() as u64
 }
 
-pub fn new(index: super::Index, params: &[&str]) -> Result<String> {
+pub fn start_writer(index: super::Index, recv: Receiver<super::Item>) {
+    println!("Writer started.");
+    for item in recv.iter() {
+        println!("Write request: {:?}", item);
+        let offset = write(&item, "db.txt");
+        index.update(&item.key, offset);
+    }
+}
+
+pub fn new(db: super::Database, params: &[&str]) -> Result<String> {
     let item = super::Item::new(params)?;
-    let offset = write(&item, "db.txt");
-    index.update(&item.key, offset);
+    let offset = write(&item, &db.filename);
+    db.index.update(&item.key, offset);
     Ok(format!("{} {}", &item.key, &item.value))
 }

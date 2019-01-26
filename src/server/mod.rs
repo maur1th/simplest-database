@@ -2,7 +2,7 @@ use std::{str, thread};
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind, Result};
 use std::net::{TcpListener,TcpStream};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::collections::HashMap;
 
 mod set;
@@ -24,9 +24,32 @@ impl Index {
     }
 }
 
+#[derive(Clone)]
+pub struct Database {
+    filename: String,
+    index: Index,
+    writer: mpsc::Sender<Item>,
+}
+
+impl Database {
+    pub fn new_writer(index: Index) -> mpsc::Sender<Item> {
+        let (send, recv) = mpsc::channel::<Item>();
+        thread::spawn(move || {
+            set::start_writer(index, recv);
+        });
+        send
+    }
+
+    pub fn new(filename: &str) -> Database {
+        let filename = filename.to_owned();
+        let index = Index::new();
+        let writer = Database::new_writer(index.clone());
+        Database { filename, index, writer }
+    }
+}
 
 #[derive(Debug)]
-struct Item {
+pub struct Item {
     key: String,
     value: String,
 }
@@ -47,15 +70,15 @@ impl Item {
 }
 
 
-fn handle_routes(index: Index, action: &str, params: &[&str]) -> Result<String> {
+fn handle_routes(db: Database, action: &str, params: &[&str]) -> Result<String> {
     match action {
-        "set" => set::new(index, &params),
-        "get" => get::new(index, params[0]),
+        "set" => set::new(db, &params),
+        "get" => get::new(db, params[0]),
         _ => Err(Error::new(ErrorKind::InvalidInput, format!("Unknown argument: {}", action))),
     }
 }
 
-fn handle_client(index: Index, mut stream: TcpStream) {
+fn handle_client(db: Database, mut stream: TcpStream) {
     let mut buffer = [0; 512];
     stream.read(&mut buffer).unwrap();
     let mut msg = str::from_utf8(&buffer)
@@ -64,7 +87,7 @@ fn handle_client(index: Index, mut stream: TcpStream) {
         .split(",");
     let action = msg.next().expect("Missing argument");
     let params: Vec<&str> = msg.collect();
-    let res: String = match handle_routes(index, action, &params) {
+    let res: String = match handle_routes(db, action, &params) {
         Ok(res) => res,
         Err(err) => {
             println!("Got an error: {}", err);
@@ -76,15 +99,15 @@ fn handle_client(index: Index, mut stream: TcpStream) {
 }
 
 pub fn run(port: i32) {
-    let index = Index::new();
+    let db = Database::new("db.txt");
     println!("Starting server on port {}...", port);
     let listener = TcpListener::bind(format!("localhost:{}", port))
         .expect("Could not bind listener.");
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                let i2 = index.clone();
-                thread::spawn(move || handle_client(i2, stream));
+                let db = db.clone();
+                thread::spawn(move || handle_client(db, stream));
             }
             Err(err) => {
                 println!("Connection failed: {:?}", err);

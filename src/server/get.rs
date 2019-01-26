@@ -46,12 +46,12 @@ fn get_result(log_file: &str, offset: u64) -> Result<String> {
     Ok(line[index+1..].to_owned())
 }
 
-pub fn new(index: super::Index, key: &str) -> Result<String> {
+pub fn new(db: super::Database, key: &str) -> Result<String> {
     let log_file = "db.txt";
     println!("Get: {}", key);
-    let offset = get_offset(&index, key)
+    let offset = get_offset(&db.index, key)
         .or_else(|| find(log_file, key).map(|offset| {
-            index.update(key, offset);
+            db.index.update(key, offset);
             offset
         }));
     if let Some(offset) = offset {
